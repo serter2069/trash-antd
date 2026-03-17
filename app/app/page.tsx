@@ -2,9 +2,22 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Layout,
+  Card,
+  Button,
+  Input,
+  List,
+  Typography,
+  Space,
+  Pagination,
+  Spin,
+} from 'antd';
+import { LogoutOutlined } from '@ant-design/icons';
+
+const { Header, Content } = Layout;
+const { Title, Text } = Typography;
+const { TextArea } = Input;
 
 interface Thought {
   id: number;
@@ -38,8 +51,7 @@ export default function AppPage() {
     loadThoughts(page);
   }, [page, loadThoughts]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit() {
     if (!text.trim()) return;
     setSubmitting(true);
 
@@ -67,82 +79,96 @@ export default function AppPage() {
     router.push('/login');
   }
 
-  const totalPages = Math.ceil(total / 20);
+  function pluralThoughts(n: number) {
+    if (n === 1) return 'мысль';
+    if (n >= 2 && n <= 4) return 'мысли';
+    return 'мыслей';
+  }
 
   return (
-    <div className="min-h-screen p-4 max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Мысли в урну</h1>
-        <Button variant="outline" size="sm" onClick={handleLogout}>
+    <Layout style={{ minHeight: '100vh' }}>
+      <Header style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 24px',
+        background: '#001529',
+      }}>
+        <Title level={4} style={{ color: '#fff', margin: 0 }}>
+          Мысли в урну
+        </Title>
+        <Button
+          icon={<LogoutOutlined />}
+          onClick={handleLogout}
+          ghost
+          size="small"
+        >
           Выйти
         </Button>
-      </div>
+      </Header>
 
-      <Card>
-        <CardContent className="pt-6">
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <Textarea
+      <Content style={{ padding: '24px', maxWidth: 800, margin: '0 auto', width: '100%' }}>
+        <Card style={{ marginBottom: 24 }}>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <TextArea
               placeholder="Напишите негативную мысль..."
               value={text}
               onChange={(e) => setText(e.target.value)}
               rows={4}
-              className="resize-none"
+              style={{ resize: 'none' }}
             />
-            <Button type="submit" className="w-full" disabled={submitting || !text.trim()}>
+            <Button
+              type="primary"
+              size="large"
+              block
+              loading={submitting}
+              disabled={!text.trim()}
+              onClick={handleSubmit}
+            >
               {submitting ? 'Выбрасываем...' : 'Выбросить'}
             </Button>
-          </form>
-        </CardContent>
-      </Card>
+          </Space>
+        </Card>
 
-      <div className="space-y-3">
-        <h2 className="text-lg font-semibold">
-          История ({total} {total === 1 ? 'мысль' : total >= 2 && total <= 4 ? 'мысли' : 'мыслей'})
-        </h2>
+        <Card
+          title={
+            <Text strong>
+              История ({total} {pluralThoughts(total)})
+            </Text>
+          }
+        >
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '24px' }}>
+              <Spin />
+            </div>
+          ) : (
+            <List
+              dataSource={thoughts}
+              locale={{ emptyText: 'Пока пусто. Выбросьте первую мысль.' }}
+              renderItem={(item) => (
+                <List.Item key={item.id} style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <Text type="secondary" style={{ fontSize: 12, marginBottom: 4 }}>
+                    {new Date(item.created_at).toLocaleString('ru-RU')}
+                  </Text>
+                  <Text style={{ whiteSpace: 'pre-wrap' }}>{item.text}</Text>
+                </List.Item>
+              )}
+            />
+          )}
 
-        {loading ? (
-          <p className="text-muted-foreground text-sm">Загрузка...</p>
-        ) : thoughts.length === 0 ? (
-          <p className="text-muted-foreground text-sm">Пока пусто. Выбросьте первую мысль.</p>
-        ) : (
-          thoughts.map((t) => (
-            <Card key={t.id}>
-              <CardHeader className="pb-2 pt-4">
-                <CardTitle className="text-sm font-normal text-muted-foreground">
-                  {new Date(t.created_at).toLocaleString('ru-RU')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pb-4">
-                <p className="text-sm whitespace-pre-wrap">{t.text}</p>
-              </CardContent>
-            </Card>
-          ))
-        )}
-
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-            >
-              Назад
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              {page} / {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-            >
-              Вперёд
-            </Button>
-          </div>
-        )}
-      </div>
-    </div>
+          {total > 20 && (
+            <div style={{ marginTop: 16, textAlign: 'right' }}>
+              <Pagination
+                current={page}
+                total={total}
+                pageSize={20}
+                onChange={(p) => setPage(p)}
+                showSizeChanger={false}
+              />
+            </div>
+          )}
+        </Card>
+      </Content>
+    </Layout>
   );
 }

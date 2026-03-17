@@ -2,30 +2,27 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, Form, Input, Button, Typography, Alert } from 'antd';
+
+const { Title, Text } = Typography;
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(values: { email: string }) {
     setLoading(true);
     setError('');
 
     const res = await fetch('/api/auth/send-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email: values.email }),
     });
 
     if (res.ok) {
-      router.push(`/verify?email=${encodeURIComponent(email)}`);
+      router.push(`/verify?email=${encodeURIComponent(values.email)}`);
     } else {
       const data = await res.json();
       setError(data.error || 'Что-то пошло не так');
@@ -34,31 +31,54 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Мысли в урну</CardTitle>
-          <CardDescription>Введите email для входа</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: '#f0f2f5',
+      padding: '16px',
+    }}>
+      <Card style={{ width: '100%', maxWidth: 400 }} variant="borderless">
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <Title level={3} style={{ margin: 0 }}>Мысли в урну</Title>
+          <Text type="secondary">Введите email для входа</Text>
+        </div>
+
+        {error && (
+          <Alert message={error} type="error" showIcon style={{ marginBottom: 16 }} />
+        )}
+
+        <Form layout="vertical" onFinish={handleSubmit} autoComplete="off">
+          <Form.Item
+            label="Email"
+            name="email"
+            rules={[
+              { required: true, message: 'Введите email' },
+              { type: 'email', message: 'Неверный формат email' },
+            ]}
+          >
+            <Input
+              id="email-input"
+              type="email"
+              placeholder="you@example.com"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 0 }}>
+            <Button
+              id="send-btn"
+              type="primary"
+              htmlType="submit"
+              size="large"
+              block
+              loading={loading}
+            >
               {loading ? 'Отправляем...' : 'Получить код'}
             </Button>
-          </form>
-        </CardContent>
+          </Form.Item>
+        </Form>
       </Card>
     </div>
   );

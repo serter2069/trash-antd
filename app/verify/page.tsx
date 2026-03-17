@@ -2,29 +2,26 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, Form, Input, Button, Typography, Alert } from 'antd';
+
+const { Title, Text } = Typography;
 
 function VerifyForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get('email') || '';
 
-  const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(values: { code: string }) {
     setLoading(true);
     setError('');
 
     const res = await fetch('/api/auth/verify-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, code }),
+      body: JSON.stringify({ email, code: values.code }),
     });
 
     if (res.ok) {
@@ -37,34 +34,54 @@ function VerifyForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Введите код</CardTitle>
-          <CardDescription>
-            Код отправлен на {email}. (Подсказка: всегда <strong>1234</strong>)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="code">4-значный код</Label>
-              <Input
-                id="code"
-                type="text"
-                placeholder="1234"
-                maxLength={4}
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                required
-              />
-            </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: '#f0f2f5',
+      padding: '16px',
+    }}>
+      <Card style={{ width: '100%', maxWidth: 400 }} variant="borderless">
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <Title level={3} style={{ margin: 0 }}>Введите код</Title>
+          <Text type="secondary">
+            Код отправлен на {email}. Подсказка: всегда <Text strong>1234</Text>
+          </Text>
+        </div>
+
+        {error && (
+          <Alert message={error} type="error" showIcon style={{ marginBottom: 16 }} />
+        )}
+
+        <Form layout="vertical" onFinish={handleSubmit} autoComplete="off">
+          <Form.Item
+            label="4-значный код"
+            name="code"
+            rules={[{ required: true, message: 'Введите код' }]}
+          >
+            <Input
+              id="code-input"
+              type="text"
+              placeholder="1234"
+              maxLength={4}
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 0 }}>
+            <Button
+              id="verify-btn"
+              type="primary"
+              htmlType="submit"
+              size="large"
+              block
+              loading={loading}
+            >
               {loading ? 'Проверяем...' : 'Войти'}
             </Button>
-          </form>
-        </CardContent>
+          </Form.Item>
+        </Form>
       </Card>
     </div>
   );
