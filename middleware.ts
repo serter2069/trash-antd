@@ -4,7 +4,7 @@ import { jwtVerify } from 'jose';
 const SECRET = new TextEncoder().encode('trash-secret-123');
 const COOKIE_NAME = 'session';
 
-export async function proxy(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   const isProtected =
